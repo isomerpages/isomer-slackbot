@@ -1,0 +1,27 @@
+{
+  "name": "github-manager-app",
+  "version": "1.0.0",
+  "description": "a slack app that communicates with the github api v3 to add or remove team members",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "github",
+    "slackbot",
+    "chatops"
+  ],
+  "author": "kwa jie hao",
+  "license": "ISC",
+  "dependencies": {
+    "@octokit/app": "^4.1.0",
+    "@octokit/request": "^5.1.0",
+    "@slack/web-api": "^5.1.0",
+    "body-parser": "^1.19.0",
+    "btoa": "^1.2.1",
+    "dotenv": "^8.1.0",
+    "express": "^4.17.1",
+    "node-fetch": "^2.6.0",
+    "request": "^2.88.0"
+  }
+}
