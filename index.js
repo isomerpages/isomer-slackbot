@@ -7,8 +7,11 @@ const { WebClient } = require('@slack/web-api')
 const fetch = require('node-fetch')
 
 
+
 // import internal modules
 const userToServer = require('./app/user')
+const interactions = require('./app/interactions')
+
 
 
 // Credentials
@@ -37,8 +40,6 @@ const actionRemoveUser = 'remove-user'
 const orgID = 'Test-kwa' // 'Isomer'
 
 
-
-
 // Start server
 app.listen(process.env.PORT || PORT, function() {
   console.log('Bot is listening on port ' + PORT);
@@ -62,7 +63,7 @@ app.post('/verification', (req, res) => {
 // invite/add a user to an organization
 app.post('/add-users', async (req, res) => {
     // get an array of users from the text input
-    const usernames = req['body']['text'].split(',')
+    const usernames = req['body']['text'].split(' ')
 
     // get the channel ID so we can post an interactive message back
     const channel_id =  req['body']['channel_id']
@@ -97,6 +98,8 @@ app.post('/add-users', async (req, res) => {
             },
             {
                 "type": "actions",
+
+                // use an * to create a unique id depending on the usernames submitted
                 "block_id": `${usernames.join('*')}`,
                 "elements": [
                   {
@@ -188,44 +191,63 @@ app.post('/remove-user', (req, res) => {
     res.status(200).send('')
 })
 
+
+
 // URL endpoint for our interactive components/messages
 app.post('/interaction', async (req, res) => {
-    try {
-        // receive the data payload from the interaction
-        const payload = JSON.parse(req['body']['payload'])
-        const responseUrl = payload.response_url
+    // receive the data payload from the interaction
+    const payload = JSON.parse(req['body']['payload'])
+    const resUrl = payload.response_url
 
-        // log for testing
-        console.log(payload)
 
-        // retrieve username and organization from message
-        const message = payload.message.blocks[0].text.text.split(' ')
-        
+    // log for testing
+    // console.log(payload['actions'])
+    
+    try {        
         // usually the response comes in the form of an array of actions
         for (var i = 0; i < payload.actions.length; i++) {
 
             // if the command is to add users
             if (payload.actions[i].action_id === actionAddUserToTeam){
+
+                // extract the team and array of usernames
                 const team = payload.actions[i].selected_option.value
                 const users = payload.actions[i].block_id.split('*')
+                
                 for (var j = 0; j < users.length; j++) {
-                    userToServer.inviteToOrganization(orgID, users[j], team)
 
-                    // send feedback
-                    // return from inviteToOrganization
+                    // adding a single user
+                    await interactions.addUser(i, j, orgID, resUrl, team, users)
+                    
                 }
+                
             }
+            
 
             // if the command is to remove user
             if (payload.actions[i].action_id.split(':')[0] === actionRemoveUser) {
+                // message to parse to identify users to remove
+                const message = payload.message.blocks[0].text.text.split(' ')
+
                 // the 5th and 7th positions are for username and organization respectively
-                userToServer.removeUserSlack(payload.actions[i].value, responseUrl,  message[5], message[7].substring(0,(message[7].length-1)))
+                userToServer.removeUserSlack(payload.actions[i].value, responseUrl,  message[5], orgID.substring(0,(orgID.length-1)))
             }
         }
         
-        
     } catch(err) {
+        // log the error in console
         console.log(err)
+
+        // send error message to slack
+        await fetch(resUrl, {
+            method: 'post',
+            body: JSON.stringify({
+                "text": 'There was a problem with your request. Please ensure that your request is valid.'
+            }),
+            headers: { 
+                'Content-Type': 'application/json' 
+            }
+        })
     }
 
 })

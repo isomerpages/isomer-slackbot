@@ -36,7 +36,7 @@ Commands to be performed by slash function
 
 // invite (add) one user or multiple users to the organization 
 // and team(s) of the function invoker's choosing
-async function inviteToOrganization(orgName, username, team) {
+async function inviteToOrganization(orgName, username, teamId) {
 /*
 @orgName the organization's name as a string (case-sensitive)
 @username should be a string reprenting the user's Github login ID
@@ -44,7 +44,6 @@ async function inviteToOrganization(orgName, username, team) {
 */
     try {
         const userId = await getUserId(username)
-        const teamId = await getTeamId(orgId, team)
 
         const data = await request("POST /orgs/:org/invitations", {
             org: orgName,
@@ -56,8 +55,7 @@ async function inviteToOrganization(orgName, username, team) {
             }
         })
 
-        console.log(data)
-
+        return data
         /* 
 
         Here we can experiment with inviting through email instead of userId
@@ -71,6 +69,35 @@ async function inviteToOrganization(orgName, username, team) {
         return err
     }
 }
+
+
+
+// invite a user that is already part of the organization to a team
+// in the organization
+async function inviteToTeam(username, teamId) {
+/*
+@username should be a string reprenting the user's Github login ID
+@teamId is an integers which represents the team's Github Id
+*/
+    try { 
+        const data = await request("PUT /teams/:team_id/memberships/:username", {
+            team_id: teamId,
+            username: username,
+            headers: {
+              authorization: `basic ${btoa(CREDENTIALS)}`,
+              accept: "application/vnd.github.dazzler-preview+json"
+            }
+        })
+
+        return data
+
+    } catch(err) {
+        // *** log error - to do: develop more sophisticated logging techniques
+        console.log(err)
+        return err
+    }
+}
+
 
 
 
@@ -195,12 +222,16 @@ async function getTeamId(orgName, teamName) {
 
 
 
-// check if the user is a maintainer in the team
+// check if the user is a maintainer in the team, or the state of the membership
 async function checkTeamRole(teamId, username) {
 /*
 @teamId is an integer representing the team's Github ID 
 @username is the user's Github username as a string (case-sensitive)
+
+note: this assumes that the username submitted is a part of the team!
+you can do this by running the checkIfInTeam function below.
 */
+
     try {
         const data = await request("GET /teams/:team_id/memberships/:username", {
             team_id: teamId,
@@ -211,9 +242,13 @@ async function checkTeamRole(teamId, username) {
             }
         })
 
-        // check if team role is 'maintainer'
-        const teamRole = await data['data']['role']    
-        return teamRole === 'maintainer'
+        // returns an object that tells you if the member is 
+            // a maintainer
+            // already invited
+            return {
+                isMaintainer: data['data']['role'] === 'maintainer',
+                isInvited: data['data']['state']
+            }
 
     } catch(err) {
         // *** log error - to do: develop more sophisticated logging techniques
@@ -222,18 +257,95 @@ async function checkTeamRole(teamId, username) {
     
 }
 
+// check if a user is in a team
+async function checkIfInTeam(teamId, username) {
+/*
 
+Add comments
+
+*/
+    // initiate empty array to store results
+    const inTeam = []    
+
+    try {
+        const data = await request("GET /teams/:team_id/members", {
+            team_id: teamId,
+            headers: {
+                authorization: `basic ${btoa(CREDENTIALS)}`,
+                accept: "application/vnd.github.hellcat-preview+json"
+            }
+        })
+
+        // get the list of members
+        const memberList = data['data']
+
+        // puts the username of each member into the results array
+        for (let i = 0; i < memberList.length; i += 1) {
+            inTeam.push(memberList[i].login)
+        }
+
+        return inTeam.indexOf(username) > -1
+
+    } catch(err) {
+        // *** log error - to do: develop more sophisticated logging techniques
+        console.log(err)
+    }
+}
+
+
+
+// check if a user is in an organization
+async function checkIfInOrg(orgID, username) {
+    /*
+    
+    Add comments
+    
+    */
+        // initiate empty array to store results
+        const inOrg = []    
+    
+        try {
+            const data = await request("GET /orgs/:org/members", {
+                org: orgID,
+                headers: {
+                    authorization: `basic ${btoa(CREDENTIALS)}`,
+                    accept: "application/vnd.github.hellcat-preview+json"
+                }
+            })
+    
+            // get the list of members
+            const memberList = data['data']
+    
+            // puts the username of each member into the results array
+            for (let i = 0; i < memberList.length; i += 1) {
+                inOrg.push(memberList[i].login)
+            }
+    
+            return inOrg.indexOf(username) > -1
+    
+        } catch(err) {
+            // *** log error - to do: develop more sophisticated logging techniques
+            console.log(err)
+        }
+    }
 
 // inviteToOrganization('Test-kwa', 'isomer-bot')
+inviteToTeam('isomer-bot', 3433871)
 // getUserId('kwajiehao')
-// getTeamId('Test-kwa', 'abc') // 3433868
-// checkTeamRole(3433868, 'kwajiehao')
-getAllTeams('isomerpages')
-
+// getTeamId('test-kwa', 'test-team-2') // abc is 3433868, test-team-2 is 3433871
+// checkTeamRole(3433871, 'isomer-bot')
+// getAllTeams('isomerpages')
+// checkIfInTeam(3433868, 'isomer-bot')
+// checkIfInOrg('test-kwa', 'kwajiehao')
 
 module.exports = {
-    getUserId,
     inviteToOrganization,
+    inviteToTeam,
     deleteFromOrganization,
-    getAllTeams
+    getAllTeams,
+    getUserId,
+    getTeamId,
+    checkTeamRole,
+    checkIfInTeam,
+    checkIfInOrg
 }

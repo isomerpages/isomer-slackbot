@@ -10,8 +10,20 @@ function slugify(name) {
 }  
 
 
+
+// check for transforming text into useable form
+function textTransform(text) {
+    return text.toLowerCase().trim()
+}
+
+
+// function to check whether user can make the action based on a 
+// key-value map of whitelisted users
+
+
 // export functions
 module.exports = {
-    slugify
+    slugify,
+    textTransform
 }
 
