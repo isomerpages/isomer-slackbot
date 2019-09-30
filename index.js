@@ -37,7 +37,15 @@ const actionRemoveUser = 'remove-user'
 
 
 // Name of organization is always 'Isomer' - for testing purposes, change this to 'Test-kwa'
-const orgID = 'Test-kwa' // 'Isomer'
+const orgName = 'Test-kwa' // 'Isomer'
+
+// A key-value map to map slack user IDs to Github IDs - this will be an environmental 
+// variable in production
+const teamLeaders = {
+    UN8LPT6GN:'kwajiehao'
+}
+
+
 
 
 // Start server
@@ -69,7 +77,7 @@ app.post('/add-users', async (req, res) => {
     const channel_id =  req['body']['channel_id']
 
     // retrieve an array of teams in the organization
-    const teams = await userToServer.getAllTeams(orgID)
+    const teams = await userToServer.getAllTeams(orgName)
 
     // initiate empty array to store the result to be passed to the interactive message
     const teamOptions = []
@@ -152,7 +160,7 @@ app.post('/remove-user', (req, res) => {
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": `Do you want to remove ${username} from ${orgID}?`
+                        "text": `Do you want to remove ${username} from ${orgName}?`
                     }
                 },
                 {
@@ -201,7 +209,7 @@ app.post('/interaction', async (req, res) => {
 
 
     // log for testing
-    // console.log(payload['actions'])
+    console.log(payload)
     
     try {        
         // usually the response comes in the form of an array of actions
@@ -210,15 +218,15 @@ app.post('/interaction', async (req, res) => {
             // if the command is to add users
             if (payload.actions[i].action_id === actionAddUserToTeam){
 
-                // extract the team and array of usernames
+                // extract data we need to add user (e.g. team, users, person calling the function)
                 const team = payload.actions[i].selected_option.value
                 const users = payload.actions[i].block_id.split('*')
+                const inviter = teamLeaders[payload.user.id]
                 
                 for (var j = 0; j < users.length; j++) {
-
+                
                     // adding a single user
-                    await interactions.addUser(i, j, orgID, resUrl, team, users)
-                    
+                    await interactions.addUser(i, j, orgName, resUrl, team, users[j], inviter)   
                 }
                 
             }
@@ -230,7 +238,7 @@ app.post('/interaction', async (req, res) => {
                 const message = payload.message.blocks[0].text.text.split(' ')
 
                 // the 5th and 7th positions are for username and organization respectively
-                userToServer.removeUserSlack(payload.actions[i].value, responseUrl,  message[5], orgID.substring(0,(orgID.length-1)))
+                userToServer.removeUserSlack(payload.actions[i].value, responseUrl,  message[5], orgName.substring(0,(orgName.length-1)))
             }
         }
         
@@ -257,7 +265,7 @@ async function removeUserSlack(value, resUrl, username) {
         // send confirmation
         if (value === 'yes') {
             // call method from /app sub-directory to remove user from Github team
-            userToServer.deleteFromOrganization(orgID, username)
+            userToServer.deleteFromOrganization(orgName, username)
 
             
             // send feedback to slack user
@@ -265,7 +273,7 @@ async function removeUserSlack(value, resUrl, username) {
             await fetch(resUrl, {
                 method: 'post',
                 body: JSON.stringify({
-                    "text": `${username} has been removed from ${orgID}`
+                    "text": `${username} has been removed from ${orgName}`
                 }),
                 headers: { 
                     'Content-Type': 'application/json' 
@@ -277,7 +285,7 @@ async function removeUserSlack(value, resUrl, username) {
             await fetch(resUrl, {
                 method: 'post',
                 body: JSON.stringify({
-                    "text": `${username} has not been removed from ${orgID}`
+                    "text": `${username} has not been removed from ${orgName}`
                 }),
                 headers: { 
                     'Content-Type': 'application/json' 
@@ -290,7 +298,7 @@ async function removeUserSlack(value, resUrl, username) {
         await fetch(resUrl, {
             method: 'post',
             body: JSON.stringify({
-                "text": `We were unable to remove ${username} from ${orgID}. Please ensure that you have the rights to do this action.`
+                "text": `We were unable to remove ${username} from ${orgName}. Please ensure that you have the rights to do this action.`
             }),
             headers: { 
                 'Content-Type': 'application/json' 

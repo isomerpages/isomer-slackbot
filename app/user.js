@@ -242,6 +242,7 @@ you can do this by running the checkIfInTeam function below.
             }
         })
 
+        console.log(data['data'])
         // returns an object that tells you if the member is 
             // a maintainer
             // already invited
@@ -330,7 +331,7 @@ async function checkIfInOrg(orgID, username) {
     }
 
 // inviteToOrganization('Test-kwa', 'isomer-bot')
-inviteToTeam('isomer-bot', 3433871)
+// inviteToTeam('isomer-bot', 3433871)
 // getUserId('kwajiehao')
 // getTeamId('test-kwa', 'test-team-2') // abc is 3433868, test-team-2 is 3433871
 // checkTeamRole(3433871, 'isomer-bot')
