@@ -59,67 +59,76 @@ app.post('/verification', (req, res) => {
 app.post('/add-users', async (req, res) => {
   // get the channel ID so we can post an interactive message back
   const channelId = req['body']['channel_id']
+  console.log(channelId)
 
-  // get an array of users from the text input
-  const usernames = req['body']['text'].trim().split(' ')
-    .filter(Boolean)
+  try {
+    // get an array of users from the text input
+    const usernames = req['body']['text'].trim().split(' ')
+      .filter(Boolean)
 
-  // filter out empty responses
-  if ((usernames.length === 1 && usernames[0] === '') || usernames.length === 0) {
+    // filter out empty responses
+    if ((usernames.length === 1 && usernames[0] === '') || usernames.length === 0) {
+      web.chat.postMessage({
+        channel: channelId,
+        text: 'Please enter the username of the member you wish to invite',
+      })
+      res.status(200).send('')
+      return
+    }
+
+    // retrieve an array of teams in the organization
+    const teams = await userToServer.getAllTeams(orgName)
+
+    // initiate empty array to store the result to be passed to the interactive message
+    const teamOptions = []
+
+    // generate the teamOptions array to be displayed in the message
+    for (let i = 0; i < teams.length; i += 1) {
+      teamOptions.push({
+        'text': {
+          'type': 'plain_text',
+          'text': teams[i],
+        },
+        'value': teams[i],
+      })
+    }
+
+    // create an interactive message to ask them what team they want to add these users to
     web.chat.postMessage({
       channel: channelId,
-      text: 'Please enter the username of the member you wish to invite',
-    })
-    res.status(200).send('')
-    return
-  }
-
-  // retrieve an array of teams in the organization
-  const teams = await userToServer.getAllTeams(orgName)
-
-  // initiate empty array to store the result to be passed to the interactive message
-  const teamOptions = []
-
-  // generate the teamOptions array to be displayed in the message
-  for (let i = 0; i < teams.length; i += 1) {
-    teamOptions.push({
-      'text': {
-        'type': 'plain_text',
-        'text': teams[i],
-      },
-      'value': teams[i],
-    })
-  }
-
-  // create an interactive message to ask them what team they want to add these users to
-  web.chat.postMessage({
-    channel: channelId,
-    blocks: [{
-      'type': 'section',
-      'text': {
-        'type': 'mrkdwn',
-        'text': `Which team do you want to add ${usernames.join(', ')} to?`,
-      },
-    }, {
-      'type': 'actions',
-      
-      // use an * to create a unique id depending on the usernames submitted
-      'block_id': `${usernames.join('*')}`,
-      'elements': [{
-        'type': 'static_select',
-        'placeholder': {
-          'type': 'plain_text',
-          'text': 'Select team to add to',
+      blocks: [{
+        'type': 'section',
+        'text': {
+          'type': 'mrkdwn',
+          'text': `Which team do you want to add ${usernames.join(', ')} to?`,
         },
-        'action_id': actionAddUserToTeam,
-        'options': teamOptions,
+      }, {
+        'type': 'actions',
+        
+        // use an * to create a unique id depending on the usernames submitted
+        'block_id': `${usernames.join('*')}`,
+        'elements': [{
+          'type': 'static_select',
+          'placeholder': {
+            'type': 'plain_text',
+            'text': 'Select team to add to',
+          },
+          'action_id': actionAddUserToTeam,
+          'options': teamOptions,
+        }],
       }],
-    }],
-  })
-    
-  // send an empty response back to Slack just because we need to
-  // respond within 3000ms
-  res.status(200).send('')
+    })
+      
+    // send an empty response back to Slack just because we need to
+    // respond within 3000ms
+    res.status(200).send('')
+  } catch (err) {
+    // send error message to slack
+    web.chat.postMessage({
+      channel: channelId,
+      text: 'There was a problem with your request. Please ensure that your request is valid.',
+    })
+  }
 })
 
 // remove a user from an organization
@@ -242,7 +251,12 @@ app.post('/interaction', async (req, res) => {
   }
 })
 
-// app.post('/commit-log', async (req, res) => {})
+app.post('/commit-log', async (req, res) => {
+  console.log(req['body'])
+  
+  // send empty response
+  res.status(200).send('')
+})
 // create a temp file
 // upload the file
 // delete the temp

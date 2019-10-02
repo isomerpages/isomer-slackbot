@@ -13,13 +13,7 @@ const fetch = require('node-fetch')
 const userToServer = require('./user')
 
 // generic error message for insufficient permissions
-const errInsufficientPerm = {
-  method: 'post',
-  body: JSON.stringify({
-    'text': 'You do not possess sufficient permission to make this change',
-  }),
-  headers: { 'Content-Type': 'application/json' },
-}
+const errInsufficientPerm = 'You do not possess sufficient permission to make this change'
 
 // function to add a single user
 async function addUser (i, orgName, resUrl, team, user, inviter) {
@@ -44,7 +38,8 @@ async function addUser (i, orgName, resUrl, team, user, inviter) {
   const inviterInTeam = await userToServer.checkIfInTeam(teamId, inviter)
 
   if (!inviterInTeam) {
-    await fetch(resUrl, errInsufficientPerm)
+    // post error message 
+    postMessage(resUrl, errInsufficientPerm)
     return
   }
 
@@ -89,52 +84,63 @@ async function addUser (i, orgName, resUrl, team, user, inviter) {
 
   // if no permission, send a message indicating that
   } else {
-    await fetch(resUrl, errInsufficientPerm)
+    postMessage(resUrl, errInsufficientPerm)
   }
 }
 
 async function selectUserToRemove (orgName, team, inviter, action, channelId, client) {
-  // get a list of members in the team
-  const teamMembers = await userToServer.getAllTeamMembers(orgName, team)
+  // check for team ID
+  const teamId = await userToServer.getTeamId(orgName, team) 
+  
+  // check if inviter is a maintainer in the team
+  const role = await userToServer.checkTeamRole(teamId, inviter) 
 
-  // initiate empty array to store the result to be passed to the interactive message
-  const memberOptions = []
+  if (role.isMaintainer) {
+    // get a list of members in the team
+    const teamMembers = await userToServer.getAllTeamMembers(orgName, team)
 
-  // generate the teamOptions array to be displayed in the message
-  for (let i = 0; i < teamMembers.length; i += 1) {
-    memberOptions.push({
-      'text': {
-        'type': 'plain_text',
-        'text': teamMembers[i],
-      },
-      'value': teamMembers[i],
-    })
-  }
+    // initiate empty array to store the result to be passed to the interactive message
+    const memberOptions = []
 
-  // provide a dropdown menu of team members to remove
-  client.chat.postMessage({
-    channel: channelId,
-    blocks: [{
-      'type': 'section',
-      'text': {
-        'type': 'mrkdwn',
-        'text': 'Which member do you want to remove from the team?',
-      },
-    }, {
-      'type': 'actions',
-      // use an * to create a unique id depending on the usernames submitted
-      'block_id': team,
-      'elements': [{
-        'type': 'static_select',
-        'placeholder': {
+    // generate the teamOptions array to be displayed in the message
+    for (let i = 0; i < teamMembers.length; i += 1) {
+      memberOptions.push({
+        'text': {
           'type': 'plain_text',
-          'text': 'Select member to remove',
+          'text': teamMembers[i],
         },
-        'action_id': action,
-        'options': memberOptions,
+        'value': teamMembers[i],
+      })
+    }
+
+    // provide a dropdown menu of team members to remove
+    client.chat.postMessage({
+      channel: channelId,
+      blocks: [{
+        'type': 'section',
+        'text': {
+          'type': 'mrkdwn',
+          'text': 'Which member do you want to remove from the team?',
+        },
+      }, {
+        'type': 'actions',
+        // use an * to create a unique id depending on the usernames submitted
+        'block_id': team,
+        'elements': [{
+          'type': 'static_select',
+          'placeholder': {
+            'type': 'plain_text',
+            'text': 'Select member to remove',
+          },
+          'action_id': action,
+          'options': memberOptions,
+        }],
       }],
-    }],
-  })
+    })
+  // send message if insufficient permissions
+  } else {
+    client.chat.postMessage(channelId, errInsufficientPerm)
+  }
 }
 
 async function removeUser (orgName, user, resUrl) {

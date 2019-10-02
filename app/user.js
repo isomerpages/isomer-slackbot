@@ -12,6 +12,9 @@ Read the API documentation carefully!
 const { request } = require('@octokit/request')
 const btoa = require('btoa')
 const utils = require('./utils')
+const { createReadStream } = require('fs')
+const ObjectsToCsv = require('objects-to-csv')
+var tmp = require('tmp')
 
 // Credentials - *** this should be imported in index.js
 const PERSONAL_ACCESS_TOKEN = process.env['KWAJIEHAO_PERSONAL_ACCESS_TOKEN'] // kwajiehao personal access token
@@ -19,7 +22,7 @@ const USERNAME = 'kwajiehao' // user account which possesses the power to perfor
 const CREDENTIALS = `${USERNAME}:${PERSONAL_ACCESS_TOKEN}`
 
 // Other variables
-const orgName = 'test-kwa'
+// const orgName = 'test-kwa'
 
 /*
 
@@ -303,15 +306,99 @@ async function checkIfInOrg (orgID, username) {
   }
 }
 
+// get git logs
+async function getLogs (owner, repo, startDate, endDate) {
+/*
+@orgName name of owner who owns the repository - could be organization or user (string)
+@repo name of repository (string)
+@startDate ISO8601 format, YYYY-MM-DDTHH:MM:SSZ, for example, 2011-04-14T16:00:49Z
+@endDate ISO8601 format, YYYY-MM-DDTHH:MM:SSZ
+*/
+  try {
+    const data = await request('GET /repos/:owner/:repo/commits', {
+      owner: owner,
+      repo: repo,
+      since: startDate,
+      until: endDate,
+      headers: {
+        authorization: `basic ${btoa(CREDENTIALS)}`,
+        accept: 'application/vnd.github.hellcat-preview+json',
+      },
+    })
+    // console.log(data.data)
+    const commits = data.data.map((curr) => {
+      return {
+        commitId: curr.sha.substring(0, 7),
+        author: curr.commit.author.name,
+        description: curr.commit.message,
+        date: curr.commit.author.date.substring(0, curr.commit.author.date.length - 1).replace('T', ' '),
+      }
+    })
+    return commits
+  } catch (err) {
+    // *** log error - to do: develop more sophisticated logging techniques
+    // console.log(err)
+  }
+}
+
+// create a csv and upload it
+async function createAndSendCsv (channelId, client, commitData) {
+  try {
+    // create a csv object from the data object
+    const commitCsv = new ObjectsToCsv(commitData)
+
+    // async temp file creation
+    tmp.file(async function _tempFileCreated (err, path, cleanupCallback) {
+      // path is the absolute filepath of the temp file created
+      // fd is the file descriptor of the temp file created
+      if (err) throw err
+
+      // Save to temp file
+      await commitCsv.toDisk(`${path}.csv`)
+
+      // upload the file
+      fileUpload(channelId, client, `${path}.csv`)
+    })
+  } catch (err) {
+    // console.log(err)
+  }
+}
+
+// upload a file to a channel
+async function fileUpload (channelId, client, fileAddress) {
+  try {
+    await client.files.upload({
+      token: process.env['BOT_SLACK_OAUTH_ACCESS'],
+      channels: channelId,
+      // You can use a ReadableStream or a Buffer for the file option
+      // This file is located in the current directory (`process.pwd()`), so the relative path resolves
+      file: createReadStream(fileAddress),
+      filename: 'commitlog.csv',
+    })
+  } catch (err) {
+  }
+}
+
+const { WebClient } = require('@slack/web-api')
+const slackToken = process.env['BOT_SLACK_OAUTH_ACCESS']
+const web = new WebClient(slackToken)
+const data = [
+  { code: 'CA', name: 'California' },
+  { code: 'TX', name: 'Texas' },
+  { code: 'NY', name: 'New York' },
+]
 // inviteToOrganization('Test-kwa', 'isomer-bot')
 // inviteToTeam('isomer-bot', 3433871)
 // getUserId('kwajiehao')
 // getTeamId('test-kwa', 'test-team-2') // abc is 3433868, test-team-2 is 3433871
 // checkTeamRole(3433871, 'isomer-bot')
 // getAllTeams('isomerpages')
-getAllTeamMembers(orgName, 'abc')
+// getAllTeamMembers(orgName, 'abc')
 // checkIfInTeam(3433868, 'isomer-bot')
 // checkIfInOrg('test-kwa', 'kwajiehao')
+// getLogs('kwajiehao', 'telegram_kwabot', '2019-08-14T00:00:00Z')
+createAndSendCsv('DNERMJMDW', web, data)
+// fileUpload('DNERMJMDW', web)
 
 module.exports = {
   inviteToOrganization,
@@ -324,4 +411,6 @@ module.exports = {
   checkTeamRole,
   checkIfInTeam,
   checkIfInOrg,
+  getLogs,
+  fileUpload,
 }
