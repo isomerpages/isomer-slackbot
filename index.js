@@ -17,7 +17,6 @@ const utils = require('./app/utils')
 
 // Credentials
 const slackToken = process.env['BOT_SLACK_OAUTH_ACCESS']
-// const slackSecret = process.env['slackSecret']
 
 // Create an app on express
 const app = express()
@@ -138,8 +137,7 @@ app.post('/remove-users', async (req, res) => {
   try {
     // get the channel ID so we can post an interactive message back
     const channelId = req['body']['channel_id']
-    // console.log(req['body'])
-    
+          
     // retrieve an array of teams in the organization
     const teams = await userToServer.getAllTeams(orgName)
     
@@ -344,6 +342,3 @@ app.post('/commit-log', async (req, res) => {
   // send empty response
   res.status(200).send('')
 })
-// create a temp file
-// upload the file
-// delete the temp

@@ -88,7 +88,17 @@ async function addUser (i, orgName, resUrl, team, user, inviter) {
   }
 }
 
+// sends an interactive message which allows the invoker to select a member
+// to remove from the team
 async function selectUserToRemove (orgName, team, inviter, action, channelId, client) {
+/*
+@orgName organization's Github name (string)
+@team team name (string)
+@inviter username of inviter (string)
+@action actionId of the interactive message block (string)
+@channelId the ID of the slack channel you want to send to (string)
+@client an initialized slack web client
+*/
   // check for team ID
   const teamId = await userToServer.getTeamId(orgName, team) 
   
@@ -143,6 +153,7 @@ async function selectUserToRemove (orgName, team, inviter, action, channelId, cl
   }
 }
 
+// remove a user from an organization
 async function removeUser (orgName, user, resUrl) {
   // delete the user from the organization
   const result = await userToServer.deleteFromOrganization(orgName, user)

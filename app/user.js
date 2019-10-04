@@ -146,6 +146,9 @@ Team-related functions
 
 // Check all the teams in an organization
 async function getAllTeams (orgName) {
+/*
+@orgName name of Github organization (string)
+*/
   try {
     const data = await request('GET /orgs/:org/teams', {
       org: orgName,
@@ -166,6 +169,10 @@ async function getAllTeams (orgName) {
 
 // Check all the members in a team
 async function getAllTeamMembers (orgName, team) {
+/*
+@orgName name of Github organization to query (string)
+@team name of Github team to query (string)
+*/
   const teamId = await getTeamId(orgName, team)
   try {
     const data = await request('GET /teams/:team_id/members', {
@@ -246,9 +253,8 @@ you can do this by running the checkIfInTeam function below.
 // check if a user is in a team
 async function checkIfInTeam (teamId, username) {
 /*
-
-Add comments
-
+@teamId Github ID of the team in question (string)
+@username Github username of the member you wish to check on (string)
 */
 
   // initiate empty array to store results
@@ -281,7 +287,8 @@ Add comments
 // check if a user is in an organization
 async function checkIfInOrg (orgID, username) {
 /*
-    Add comments
+@orgID name of the Github organization (string)
+@username Github username of the member you wish to check on (string)
 */
   // initiate empty array to store results
   const inOrg = []
