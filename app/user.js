@@ -365,7 +365,7 @@ async function createAndSendCsv (channelId, client, commitData, startDate, endDa
       await commitCsv.toDisk(`${path}.csv`)
 
       // upload the file
-      fileUpload(channelId, client, `${path}.csv`, startDate, endDate)
+      fileUpload(channelId, client, `${path}.csv`, startDate.split('T')[0], endDate.split('T')[0])
     })
   } catch (err) {
     // console.log(err)
