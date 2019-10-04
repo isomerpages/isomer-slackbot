@@ -32,6 +32,8 @@ const web = new WebClient(slackToken)
 const actionAddUserToTeam = 'add-user-to-team'
 const actionRemoveUserFromTeam = 'remove-user'
 const actionSelectUserToRemove = 'select-user-to-remove'
+const actionCommitLogStart = 'start-date-commit'
+const actionCommitLogEnd = 'end-date-commit'
 
 // Name of organization is always 'Isomer' - for testing purposes, change this to 'Test-kwa'
 const orgName = 'Test-kwa' // 'Isomer'
@@ -241,6 +243,59 @@ app.post('/interaction', async (req, res) => {
         // send empty response
         res.status(200).send('')
       }
+
+      // get git logs start date
+      if (payload.actions[i].action_id === actionCommitLogStart) {
+        console.log(payload.actions[i])
+        const selectedDate = payload.actions[i].selected_date
+        const defaultDate = utils.defaultDateGenerator()
+
+        web.chat.postMessage({
+          channel: channelId,
+          blocks: [
+            {
+              'type': 'section',
+              'block_id': selectedDate,
+              'text': {
+                'type': 'mrkdwn',
+                'text': 'Pick an end date for the commit log.',
+              },
+              'accessory': {
+                'type': 'datepicker',
+                'action_id': actionCommitLogEnd,
+                'initial_date': defaultDate,
+                'placeholder': {
+                  'type': 'plain_text',
+                  'text': 'Select a date',
+                },
+              },
+            },
+          ],
+        })
+
+        // send empty response
+        res.status(200).send('')
+      }
+
+      // get git logs end date and return commits
+      if (payload.actions[i].action_id === actionCommitLogEnd) {
+        console.log(payload.actions[i])
+
+        // start and end date
+        const startDate = `${payload.actions[i].block_id}T00:00:00Z`
+        const endDate = `${payload.actions[i].selected_date}T00:00:00Z`
+
+        // get commit logs
+        const result = await userToServer.getLogs('kwajiehao', 'telegram_kwabot', startDate, endDate)
+        
+        // send the commits to the slack channel
+        await userToServer.createAndSendCsv(channelId, web, result, startDate, endDate)
+
+        // maybe this isn't the most efficient way to get it? their date picker doesn't seem great
+
+        // send empty response
+        res.status(200).send('')
+      }
     }
   } catch (err) {
     // log the error in console
@@ -252,8 +307,40 @@ app.post('/interaction', async (req, res) => {
 })
 
 app.post('/commit-log', async (req, res) => {
+  // logging output
   console.log(req['body'])
+
+  // get the default date for the date picker
+  const defaultStartDate = utils.defaultDateGenerator()
+
+  // get the channel ID so we can post an interactive message back
+  const channelId = req['body']['channel_id']
   
+  // post message with date pickers for the start and end date
+  // of the commit log
+  web.chat.postMessage({
+    channel: channelId,
+    blocks: [
+      {
+        'type': 'section',
+        'block_id': actionCommitLogStart,
+        'text': {
+          'type': 'mrkdwn',
+          'text': 'Pick a start date for the commit log.',
+        },
+        'accessory': {
+          'type': 'datepicker',
+          'action_id': actionCommitLogStart,
+          'initial_date': defaultStartDate,
+          'placeholder': {
+            'type': 'plain_text',
+            'text': 'Select a date',
+          },
+        },
+      },
+    ],
+  })
+
   // send empty response
   res.status(200).send('')
 })

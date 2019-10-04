@@ -15,6 +15,13 @@ function textTransform (text) {
   return text.toLowerCase().trim()
 }
 
+// get the default date for the date picker
+function defaultDateGenerator () {
+  // get the default date for the date picker
+  const today = new Date()
+  return`${today.getFullYear()}-${today.getMonth()}-05`
+}
+
 // function to check whether user can make the action based on a
 // key-value map of whitelisted users
 
@@ -22,4 +29,5 @@ function textTransform (text) {
 module.exports = {
   slugify,
   textTransform,
+  defaultDateGenerator,
 }

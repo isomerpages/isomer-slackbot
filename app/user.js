@@ -325,7 +325,7 @@ async function getLogs (owner, repo, startDate, endDate) {
         accept: 'application/vnd.github.hellcat-preview+json',
       },
     })
-    // console.log(data.data)
+
     const commits = data.data.map((curr) => {
       return {
         commitId: curr.sha.substring(0, 7),
@@ -334,6 +334,7 @@ async function getLogs (owner, repo, startDate, endDate) {
         date: curr.commit.author.date.substring(0, curr.commit.author.date.length - 1).replace('T', ' '),
       }
     })
+
     return commits
   } catch (err) {
     // *** log error - to do: develop more sophisticated logging techniques
@@ -342,7 +343,7 @@ async function getLogs (owner, repo, startDate, endDate) {
 }
 
 // create a csv and upload it
-async function createAndSendCsv (channelId, client, commitData) {
+async function createAndSendCsv (channelId, client, commitData, startDate, endDate) {
   try {
     // create a csv object from the data object
     const commitCsv = new ObjectsToCsv(commitData)
@@ -357,7 +358,7 @@ async function createAndSendCsv (channelId, client, commitData) {
       await commitCsv.toDisk(`${path}.csv`)
 
       // upload the file
-      fileUpload(channelId, client, `${path}.csv`)
+      fileUpload(channelId, client, `${path}.csv`, startDate, endDate)
     })
   } catch (err) {
     // console.log(err)
@@ -365,7 +366,7 @@ async function createAndSendCsv (channelId, client, commitData) {
 }
 
 // upload a file to a channel
-async function fileUpload (channelId, client, fileAddress) {
+async function fileUpload (channelId, client, fileAddress, startDate, endDate) {
   try {
     await client.files.upload({
       token: process.env['BOT_SLACK_OAUTH_ACCESS'],
@@ -373,20 +374,12 @@ async function fileUpload (channelId, client, fileAddress) {
       // You can use a ReadableStream or a Buffer for the file option
       // This file is located in the current directory (`process.pwd()`), so the relative path resolves
       file: createReadStream(fileAddress),
-      filename: 'commitlog.csv',
+      filename: `commitLog_${startDate}_${endDate}.csv`,
     })
   } catch (err) {
   }
 }
 
-const { WebClient } = require('@slack/web-api')
-const slackToken = process.env['BOT_SLACK_OAUTH_ACCESS']
-const web = new WebClient(slackToken)
-const data = [
-  { code: 'CA', name: 'California' },
-  { code: 'TX', name: 'Texas' },
-  { code: 'NY', name: 'New York' },
-]
 // inviteToOrganization('Test-kwa', 'isomer-bot')
 // inviteToTeam('isomer-bot', 3433871)
 // getUserId('kwajiehao')
@@ -396,8 +389,9 @@ const data = [
 // getAllTeamMembers(orgName, 'abc')
 // checkIfInTeam(3433868, 'isomer-bot')
 // checkIfInOrg('test-kwa', 'kwajiehao')
-// getLogs('kwajiehao', 'telegram_kwabot', '2019-08-14T00:00:00Z')
-createAndSendCsv('DNERMJMDW', web, data)
+// getLogs('kwajiehao', 'telegram_kwabot', '2019-09-01T00:00:00Z', '2019-10-03T00:00:00Z')
+// getLogs('kwajiehao', 'telegram_kwabot', '2019-09-01T00:00:00Z', '2019-09-30T00:00:00Z')
+// createAndSendCsv('DNERMJMDW', web, data)
 // fileUpload('DNERMJMDW', web)
 
 module.exports = {
@@ -413,4 +407,5 @@ module.exports = {
   checkIfInOrg,
   getLogs,
   fileUpload,
+  createAndSendCsv,
 }
