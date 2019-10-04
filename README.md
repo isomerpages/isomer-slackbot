@@ -12,6 +12,5 @@ This app works mainly using Slack slash commands. Slash commands act as an inter
 ### Things to work on
 - Document the functions
 - Implement permissions and a whitelist of team leaders who will be allowed to perform permissioned actions
-- 'Remove user' function
-- Retrieve monthly commit log function
+- Remove user from team function (right now we can only remove from organization)
 - Multiselect list to add users to multiple teams / remove multiple users from organization
