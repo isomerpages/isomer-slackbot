@@ -8,6 +8,14 @@ This Slack app is meant to help Open Gov Products delegate the responsibility of
 This app works mainly using Slack slash commands. Slash commands act as an interface for Isomer users to communicate with Github on our (the organization owners) behalf: for example, one of the slash commands is `/add-users`. By sending the message `/add-users <username>` to any channel in the Isomer workspace, the user can add a new member to his/her team in the Isomer organization using our credentials d(provided the user who invoked the function has the necessary permissions to add users).
 
 ## Functions
+*Add User*
+
+*Remove User*
+
+*Get Commit Logs**
+
+## Local development
+You can run the slackbot locally using ngrok. More information on how to download and run ngrok can be found [here](https://ngrok.com/download)
 
 ### Things to work on
 - Document the functions
