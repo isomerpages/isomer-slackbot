@@ -20,8 +20,8 @@ Enter your repo name and select the start and end dates for which you would like
 ## Local development
 You can run the slackbot locally using ngrok. More information on how to download and run ngrok can be found [here](https://ngrok.com/download). The command to start a ngrok server is `./ngrok http <port number>`. Once you have set up your ngrok server, you can take your ngrok URL and configure your URL end points on your Slack app.
 
-### Things to work on
+## Things to work on
 - Document the functions
-- Implement permissions and a whitelist of team leaders who will be allowed to perform permissioned actions
+- Implement a whitelist of team leaders who will be allowed to perform permissioned actions
 - Remove user from team function (right now we can only remove from organization)
 - Multiselect list to add users to multiple teams / remove multiple users from organization
