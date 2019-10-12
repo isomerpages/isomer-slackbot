@@ -8,13 +8,13 @@ This Slack app is meant to help Open Gov Products delegate the responsibility of
 This app works mainly using Slack slash commands. Slash commands act as an interface for Isomer users to communicate with Github on our (the organization owners) behalf: for example, one of the slash commands is `/add-users`. By sending the message `/add-users <username>` to any channel in the Isomer workspace, the user can add a new member to his/her team in the Isomer organization using our credentials d(provided the user who invoked the function has the necessary permissions to add users).
 
 ## Functions
-**Add User**
+**Add User:**
 Enter the username of the person you want to invite to Isomer and select the team you wish to invite him/her to.
 
-**Remove User**
+**Remove User:**
 Select an Isomer team you would like to remove a user from and select the team member to remove from the subsequent drop down.
 
-**Get Commit Logs**
+**Get Commit Logs:**
 Enter your repo name and select the start and end dates for which you would like to retrieve your commit logs.
 
 ## Local development
