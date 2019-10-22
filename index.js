@@ -56,6 +56,39 @@ app.post('/verification', (req, res) => {
   res.send('HTTP 200 OK Content-type: application/json ' + '{`challenge`:' + req['body']['challenge'] + '}')
 })
 
+app.post('/testing-oauth', async (req, res) => {
+  try {
+    // get the channel ID so we can post an interactive message back
+    const channelId = req['body']['channel_id']
+  
+    // send a user to Github authentication
+    web.chat.postMessage({
+      'text': 'Connect your Slack account to Github!',
+      'channel': channelId,
+      'attachments': [
+        {
+          'fallback': 'Connect your Github account',
+          'actions': [
+            {
+              'type': 'button',
+              'text': 'Connect to Github',
+              // use your own redirect url
+              'url': 'https://github.com/login/oauth/authorize?client_id=22cb1d0def803c3c2e00&redirect_uri=http://localhost:8080/oauth/redirect',
+            },
+          ],
+        },
+      ],
+    })
+
+    // we need to send users to the redirect url, and then send them back
+    // into the slack client with the right channel id
+
+    res.status(200).send('')
+  } catch (err) {
+    console.log(err)
+  }
+})
+
 // invite/add a user to an organization
 app.post('/add-users', async (req, res) => {
   // get the channel ID so we can post an interactive message back
@@ -196,7 +229,7 @@ app.post('/interaction', async (req, res) => {
   const resUrl = payload.response_url
 
   // log for testing
-  // console.log(payload)
+  console.log(payload)
 
   try {
     // usually the response comes in the form of an array of actions
@@ -244,7 +277,12 @@ app.post('/interaction', async (req, res) => {
 
       // get git logs start date
       if (payload.actions[i].action_id === actionCommitLogStart) {
-        console.log(payload.actions[i])
+        // console.log(payload.actions[i])
+
+        // get the repo
+        const repo = payload.actions[i].block_id.split('@')[0]
+
+        // get the selected date
         const selectedDate = payload.actions[i].selected_date
         const defaultDate = utils.defaultDateGenerator()
 
@@ -253,7 +291,7 @@ app.post('/interaction', async (req, res) => {
           blocks: [
             {
               'type': 'section',
-              'block_id': selectedDate,
+              'block_id': `${repo}@${selectedDate}`,
               'text': {
                 'type': 'mrkdwn',
                 'text': 'Pick an end date for the commit log.',
@@ -277,14 +315,17 @@ app.post('/interaction', async (req, res) => {
 
       // get git logs end date and return commits
       if (payload.actions[i].action_id === actionCommitLogEnd) {
-        console.log(payload.actions[i])
+        // console.log(payload.actions[i])
+
+        // get repo
+        const repo = payload.actions[i].block_id.split('@')[0]
 
         // start and end date
         const startDate = `${payload.actions[i].block_id}T00:00:00Z`
         const endDate = `${payload.actions[i].selected_date}T00:00:00Z`
 
         // get commit logs
-        const result = await userToServer.getLogs('kwajiehao', 'telegram_kwabot', startDate, endDate)
+        const result = await userToServer.getLogs('isomerpages', repo, startDate, endDate)
         
         // send the commits to the slack channel
         await userToServer.createAndSendCsv(channelId, web, result, startDate, endDate)
@@ -306,10 +347,15 @@ app.post('/interaction', async (req, res) => {
 
 app.post('/commit-log', async (req, res) => {
   // logging output
-  console.log(req['body'])
+  // console.log(req['body'])
 
   // get the default date for the date picker
   const defaultStartDate = utils.defaultDateGenerator()
+
+  // get the repo
+  const repo = req['body']['text']
+
+  // conduct checks on input validity, for example, if it's an isomerpages repo
 
   // get the channel ID so we can post an interactive message back
   const channelId = req['body']['channel_id']
@@ -321,7 +367,7 @@ app.post('/commit-log', async (req, res) => {
     blocks: [
       {
         'type': 'section',
-        'block_id': actionCommitLogStart,
+        'block_id': `${repo}@${actionCommitLogStart}`,
         'text': {
           'type': 'mrkdwn',
           'text': 'Pick a start date for the commit log.',
