@@ -51,7 +51,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
 // Validation challenge for Slack Events API
-app.post('/verification', (req, res) => {
+app.post('/verify', (req, res) => {
   // Send the string back with the challenge token for verification
   res.send('HTTP 200 OK Content-type: application/json ' + '{`challenge`:' + req['body']['challenge'] + '}')
 })
