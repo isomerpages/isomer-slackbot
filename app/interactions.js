@@ -16,7 +16,7 @@ const userToServer = require('./user')
 const errInsufficientPerm = 'You do not possess sufficient permission to make this change'
 
 // function to add a single user
-async function addUser (i, orgName, resUrl, team, user, inviter) {
+async function addUser (orgName, resUrl, team, user, inviter) {
 /*
 @i index from for loop in index.js (number)
 @orgName organization's Github name (string)

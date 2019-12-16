@@ -35,7 +35,7 @@ const actionCommitLogStart = 'start-date-commit'
 const actionCommitLogEnd = 'end-date-commit'
 
 // Name of organization is always 'Isomer' - for testing purposes, change this to 'Test-kwa'
-const orgName = 'Test-kwa' // 'Isomer'
+const orgName = 'isomerpages'
 
 // A key-value map to map slack user IDs to Github IDs - this will be an environmental
 // variable in production
@@ -243,7 +243,7 @@ app.post('/interaction', async (req, res) => {
 
         for (var j = 0; j < users.length; j++) {
           // adding a single user
-          await interactions.addUser(i, orgName, resUrl, team, utils.textTransform(users[j]), inviter)
+          await interactions.addUser(orgName, resUrl, team, utils.textTransform(users[j]), inviter)
           
           // send empty response
           res.status(200).send('')
