@@ -14,6 +14,7 @@ const { WebClient } = require('@slack/web-api')
 const userToServer = require('./app/user')
 const interactions = require('./app/interactions')
 const utils = require('./app/utils')
+const SignIn = require('./lib/components/signin')
 
 // Credentials
 const slackToken = process.env['BOT_SLACK_OAUTH_ACCESS']
@@ -60,25 +61,15 @@ app.post('/signin', async (req, res) => {
   try {
     // get the channel ID so we can post an interactive message back
     const channelId = req['body']['channel_id']
-  
+
+    // import signin component
+    const signin = new SignIn('https://github.com/login/oauth/authorize?client_id=22cb1d0def803c3c2e00&redirect_uri=http://localhost:8080/oauth/redirect')
+    const signinButton = signin.toJSON()
+
     // send a user to Github authentication
     web.chat.postMessage({
-      'text': 'Connect your Slack account to Github!',
       'channel': channelId,
-      'attachments': [
-        {
-          'fallback': 'Connect your Github account',
-          'actions': [
-            {
-              'type': 'button',
-              'text': 'Connect to Github',
-              'style': 'primary',
-              // use your own redirect url
-              'url': 'https://github.com/login/oauth/authorize?client_id=22cb1d0def803c3c2e00&redirect_uri=http://localhost:8080/oauth/redirect',
-            },
-          ],
-        },
-      ],
+      ...signinButton,
     })
 
     // we need to send users to the redirect url, and then send them back
