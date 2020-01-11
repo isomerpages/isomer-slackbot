@@ -56,7 +56,7 @@ app.post('/verify', (req, res) => {
   res.send('HTTP 200 OK Content-type: application/json ' + '{`challenge`:' + req['body']['challenge'] + '}')
 })
 
-app.post('/testing-oauth', async (req, res) => {
+app.post('/signin', async (req, res) => {
   try {
     // get the channel ID so we can post an interactive message back
     const channelId = req['body']['channel_id']
@@ -72,6 +72,7 @@ app.post('/testing-oauth', async (req, res) => {
             {
               'type': 'button',
               'text': 'Connect to Github',
+              'style': 'primary',
               // use your own redirect url
               'url': 'https://github.com/login/oauth/authorize?client_id=22cb1d0def803c3c2e00&redirect_uri=http://localhost:8080/oauth/redirect',
             },
@@ -345,6 +346,7 @@ app.post('/interaction', async (req, res) => {
   }
 })
 
+// request commit log
 app.post('/commit-log', async (req, res) => {
   // logging output
   // console.log(req['body'])
