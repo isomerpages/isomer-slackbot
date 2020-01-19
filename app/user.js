@@ -376,7 +376,7 @@ async function createAndSendCsv (channelId, client, commitData, startDate, endDa
 async function fileUpload (channelId, client, fileAddress, startDate, endDate) {
   try {
     await client.files.upload({
-      token: process.env['BOT_SLACK_OAUTH_ACCESS'],
+      token: process.env['SLACK_BOT_USER_ACCESS_TOKEN'],
       channels: channelId,
       // You can use a ReadableStream or a Buffer for the file option
       // This file is located in the current directory (`process.pwd()`), so the relative path resolves

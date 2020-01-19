@@ -9,6 +9,9 @@ require('dotenv').config()
 const express = require('express')
 const bodyParser = require('body-parser')
 const { WebClient } = require('@slack/web-api')
+const uuid = require('uuid')
+const axios = require('axios')
+const queryString = require('query-string')
 
 // import internal modules
 const userToServer = require('./app/user')
@@ -17,7 +20,7 @@ const utils = require('./app/utils')
 const SignIn = require('./lib/components/signin')
 
 // Credentials
-const slackToken = process.env['BOT_SLACK_OAUTH_ACCESS']
+const slackToken = process.env['SLACK_BOT_USER_ACCESS_TOKEN']
 
 // Create an app on express
 const app = express()
@@ -51,6 +54,11 @@ app.listen(process.env.PORT || PORT, function () {
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
+// Simple front page
+app.get('/', (req, res) => {
+  res.send("This is Jiehao's slackbot's homepage")
+})
+
 // Validation challenge for Slack Events API
 app.post('/verify', (req, res) => {
   // Send the string back with the challenge token for verification
@@ -59,11 +67,14 @@ app.post('/verify', (req, res) => {
 
 app.post('/signin', async (req, res) => {
   try {
+    // generate a UUID
+    const UUID = uuid.v4()
+
     // get the channel ID so we can post an interactive message back
     const channelId = req['body']['channel_id']
 
     // import signin component
-    const signin = new SignIn('https://github.com/login/oauth/authorize?client_id=22cb1d0def803c3c2e00&redirect_uri=http://localhost:8080/oauth/redirect')
+    const signin = new SignIn(`https://github.com/login/oauth/authorize?client_id=${process.env['GITHUB_OAUTH_CLIENT_ID']}&state=${UUID}&scope=public_repo`)
     const signinButton = signin.toJSON()
 
     // send a user to Github authentication
@@ -72,10 +83,37 @@ app.post('/signin', async (req, res) => {
       ...signinButton,
     })
 
-    // we need to send users to the redirect url, and then send them back
-    // into the slack client with the right channel id
+    // we can use the state as a key to store the user id/channel id
+    // but then how do we reconcile this when the user logs in and out
+    
+    // the state is the only one connecting them
+    // so we establish user-state
+    // and then state-oauth token
 
     res.status(200).send('')
+  } catch (err) {
+    console.log(err)
+  }
+})
+
+app.get('/signin', async (req, res) => {
+  try {
+    console.log(res.locals)
+    // retrieve access token and state
+    const { code, state } = req.query
+
+    // construct params object for oauth token request
+    const params = {
+      client_id: process.env['GITHUB_OAUTH_CLIENT_ID'],
+      client_secret: process.env['GITHUB_OAUTH_CLIENT_SECRET'],
+      code: code,
+      state,
+    }
+
+    const resp = await axios.post('https://github.com/login/oauth/access_token', params)
+    const oauthToken = queryString.parse(resp.data).access_token
+    console.log(`This is my oauth token ${oauthToken}`)
+    res.send("This is Jiehao's slackbot's homepage")
   } catch (err) {
     console.log(err)
   }
